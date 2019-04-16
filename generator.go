@@ -2371,10 +2371,14 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("buff.WriteString(", `"SELECT "`, ")")
 		g.P("i := 0")
 		g.P("if len(m.XXX_Update) == 0{")
-		g.P("buff.WriteString(", `"*"`, ")")
 		g.P("ks = make([]string,", len(topLevelFields), ")")
 		for k, pf := range topLevelFields {
 			g.P(`ks[`, k, `] = "`, pf.getName(), `"`)
+			g.P("if i > 0{")
+			g.P("buff.WriteString(", `", "`, ")")
+			g.P("}")
+			g.P(`buff.WriteString("`, pf.getName(), `")`)
+			g.P("i += 1")
 		}
 		g.P("}else{")
 		g.P("ks = make([]string,len(m.XXX_Update))")
