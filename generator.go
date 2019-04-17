@@ -2293,6 +2293,13 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 	g.P("var xxx_messageInfo_", mc.goName, " ", g.Pkg["proto"], ".InternalMessageInfo")
 	g.P()
 
+	g.P("func (m *", mc.goName, ") GetName() string {")
+	g.P("var buff bytes.Buffer")
+	g.P(`buff.WriteString("`, mc.goName, `")`)
+	g.P("data := strconv.Quote(buff.String())")
+	g.P("return data")
+	g.P("}")
+
 	if strings.HasPrefix(mc.goName, "Data") {
 
 		//add new  function
@@ -2528,14 +2535,8 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("return ")
 		g.P("}")
 		g.P()
-	} else {
-		g.P("func (m *", mc.goName, ") GetName() string {")
-		g.P("var buff bytes.Buffer")
-		g.P(`buff.WriteString("`, mc.goName, `")`)
-		g.P("data := strconv.Quote(buff.String())")
-		g.P("return data")
-		g.P("}")
 	}
+
 }
 
 // Generate the type, methods and default constant definitions for this Descriptor.
