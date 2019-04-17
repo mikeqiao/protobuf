@@ -321,6 +321,9 @@ func (u *unmarshalInfo) computeUnmarshalInfo() {
 		if f.Name == "XXX_Update" {
 			continue
 		}
+		if f.Name == "XXX_Update2" {
+			continue
+		}
 		if f.Name == "XXX_Key" {
 			continue
 		}

@@ -350,6 +350,8 @@ func (u *marshalInfo) computeMarshalInfo() {
 			// nothing to do
 		case "XXX_Update":
 		// nothing to do
+		case "XXX_Update2":
+		// nothing to do
 		case "XXX_Key":
 		// nothing to do
 		case "XXX_Add":

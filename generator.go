@@ -1867,6 +1867,10 @@ func (f *simpleField) setter(g *Generator, mc *msgCtx) {
 	if f.getterDef == "nil" { // Simpler setter
 		g.P("if m != nil {")
 		g.P("m." + f.goName + "= data")
+		g.P(" if  nil == m.XXX_Update2{")
+		g.P("m.XXX_Update2 = make(map[string]interface{})")
+		g.P("}")
+		g.P(`m.XXX_Update2["` + f.goName + `"]= data`)
 		g.P(" if  nil == m.XXX_Update{")
 		g.P("m.XXX_Update = make(map[string]interface{})")
 		g.P("}")
@@ -1885,6 +1889,10 @@ func (f *simpleField) setter(g *Generator, mc *msgCtx) {
 		g.P("if m != nil && m." + f.goName + " != nil {")
 	}
 	g.P("m." + f.goName + "= data")
+	g.P(" if  nil == m.XXX_Update2{")
+	g.P("m.XXX_Update2 = make(map[string]interface{})")
+	g.P("}")
+	g.P(`m.XXX_Update2["` + f.goName + `"]= data`)
 	g.P(" if  nil == m.XXX_Update{")
 	g.P("m.XXX_Update = make(map[string]interface{})")
 	g.P("}")
@@ -1892,7 +1900,6 @@ func (f *simpleField) setter(g *Generator, mc *msgCtx) {
 		g.P("data = strconv.Quote(data)")
 	}
 	g.P(`m.XXX_Update["` + f.goName + `"]= data`)
-
 	g.P("}")
 	g.P("}")
 	g.P()
@@ -2141,6 +2148,7 @@ func (g *Generator) generateDefaultConstants(mc *msgCtx, topLevelFields []topLev
 func (g *Generator) generateInternalStructFields(mc *msgCtx, topLevelFields []topLevelField) {
 	if strings.HasPrefix(mc.goName, "Data") {
 		g.P("XXX_Update map[string]interface{} `json:\"-\"`")
+		g.P("XXX_Update2 map[string]interface{} `json:\"-\"`")
 		g.P("XXX_Key map[string]interface{} `json:\"-\"`")
 		g.P("XXX_Add map[string]interface{} `json:\"-\"`")
 	}
@@ -2435,9 +2443,9 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		//redis set
 		g.P("func (m *", mc.goName, ") RedisSet(key interface{}) (table string, data[]interface{}) {")
 		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
-		g.P("data = make([]interface{},2*len(m.XXX_Update))")
+		g.P("data = make([]interface{},2*len(m.XXX_Update2))")
 		g.P("j:= 0")
-		g.P("for k,v:= range m.XXX_Update{")
+		g.P("for k,v:= range m.XXX_Update2{")
 		g.P("data[j]= k")
 		g.P("data[j+1]= v")
 		g.P("j += 2")
@@ -2494,9 +2502,14 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("buff.WriteString(", "d", ")")
 		g.P("i += 1")
 		g.P("data[j]= k")
-		g.P("data[j+1]= v")
+		g.P("if val, ok:= m.XXX_Update2[k]; ok{")
+		g.P("data[j+1]= val")
+		g.P("}else{")
+		g.P("data[j+1]= nil")
+		g.P("}")
 		g.P("j += 2")
 		g.P("delete(m.XXX_Update, k)")
+		g.P("delete(m.XXX_Update2, k)")
 		g.P("}")
 		g.P("buff.WriteString(", `" WHERE "`, ")")
 		g.P("i = 0")
@@ -2515,6 +2528,13 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("return ")
 		g.P("}")
 		g.P()
+	} else {
+		g.P("func (m *", mc.goName, ") GetName() string {")
+		g.P("var buff bytes.Buffer")
+		g.P(`buff.WriteString("`, mc.goName, `")`)
+		g.P("data := strconv.Quote(buff.String())")
+		g.P("return data")
+		g.P("}")
 	}
 }
 
