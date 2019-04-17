@@ -2448,7 +2448,7 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("}")
 		//redis
 		//redis set
-		g.P("func (m *", mc.goName, ") RedisSet(key interface{}) (table string, data[]interface{}) {")
+		g.P("func (m *", mc.goName, ") RedisSet(key interface{}) (table string, data []interface{}) {")
 		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
 		g.P("data = make([]interface{},2*len(m.XXX_Update2))")
 		g.P("j:= 0")
@@ -2460,15 +2460,15 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("return ")
 		g.P("}")
 		//redis get
-		g.P("func (m *", mc.goName, ") RedisGet(key interface{}) (table string, data[]interface{}) {")
+		g.P("func (m *", mc.goName, ") RedisGet(key interface{}) (table string, data []string) {")
 		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
 		g.P("if len(m.XXX_Update) == 0{")
-		g.P("data = make([]interface{},", len(topLevelFields), ")")
+		g.P("data = make([]string,", len(topLevelFields), ")")
 		for k, pf := range topLevelFields {
 			g.P(`data[`, k, `] = "`, pf.getName(), `"`)
 		}
 		g.P("}else{")
-		g.P("data = make([]interface{},len(m.XXX_Update))")
+		g.P("data = make([]string,len(m.XXX_Update))")
 		g.P("j:= 0")
 		g.P("for k,_:= range m.XXX_Update{")
 		g.P("data[j] = k")
@@ -2478,9 +2478,9 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("return ")
 		g.P("}")
 		//redis del
-		g.P("func (m *", mc.goName, ") RedisDel(key interface{}) (table string, data[]interface{}) {")
+		g.P("func (m *", mc.goName, ") RedisDel(key interface{}) (table string, data []string) {")
 		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
-		g.P("data = make([]interface{},len(m.XXX_Update))")
+		g.P("data = make([]string,len(m.XXX_Update))")
 		g.P("j:= 0")
 		g.P("for k,_:= range m.XXX_Update{")
 		g.P("data[j]= k")
