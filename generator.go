@@ -2293,7 +2293,7 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 	g.P("var xxx_messageInfo_", mc.goName, " ", g.Pkg["proto"], ".InternalMessageInfo")
 	g.P()
 
-	g.P("func (m *", mc.goName, ") GetName() string {")
+	g.P("func (m *", mc.goName, ") GetTableName() string {")
 	g.P("var buff bytes.Buffer")
 	g.P(`buff.WriteString("`, mc.goName, `")`)
 	g.P("data := strconv.Quote(buff.String())")
