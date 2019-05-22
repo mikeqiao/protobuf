@@ -1849,6 +1849,9 @@ func (f *simpleField) getName() string {
 }
 
 // setter prints the setter method of the field.
+func (f *simpleField) getType() string {
+	return f.goType
+}
 func (f *simpleField) setter(g *Generator, mc *msgCtx) {
 	// No setter for regular fields yet
 	//	star := ""
@@ -2046,6 +2049,10 @@ func (f *oneofField) getName() string {
 	return f.goName
 }
 
+func (f *oneofField) getType() string {
+	return f.goType
+}
+
 // setter prints the setter method of the field.
 func (f *oneofField) setter(g *Generator, mc *msgCtx) {
 	// No setters for oneof yet
@@ -2057,6 +2064,7 @@ type topLevelField interface {
 	getter(g *Generator, mc *msgCtx) // print getter
 	setter(g *Generator, mc *msgCtx) // print setter if applicable
 	getName() string
+	getType() string
 }
 
 // defField interface implemented by all types of fields that can have defaults (not oneofField, but instead oneofSubField).
@@ -2330,25 +2338,31 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("buff.WriteString(", `"INSERT INTO "`, ")")
 		g.P(`buff.WriteString("`, mc.goName, `")`)
 		g.P("buff.WriteString(", `"( "`, ")")
-		g.P("i := 0")
 		g.P("var key bytes.Buffer")
 		g.P("var value bytes.Buffer")
-		g.P("for k,v:= range m.XXX_Update{")
-		g.P("if i > 0{")
-		g.P("key.WriteString(", `", "`, ")")
-		g.P("value.WriteString(", `", "`, ")")
-		g.P("}")
-		g.P("key.WriteString(k)")
-		g.P("d := fmt.Sprint(v)")
-		g.P("value.WriteString(", "d", ")")
-		g.P("i += 1")
-		g.P("}")
+		g.P("var d string")
+		i := 0
+		for _, pf := range topLevelFields {
+			if i > 0 {
+				g.P("key.WriteString(", `", "`, ")")
+				g.P("value.WriteString(", `", "`, ")")
+			}
+			g.P(`key.WriteString( "`, pf.getName(), `")`)
+			g.P("d = fmt.Sprint( m.", pf.getName(), ")")
+			if "string" == pf.getType() {
+				g.P("d = strconv.Quote(d)")
+			}
+			g.P("value.WriteString(", "d", ")")
+
+			i += 1
+		}
 		g.P("buff.WriteString(", "key.String()", ")")
 		g.P("buff.WriteString(", `" ) VALUES ( "`, ")")
 		g.P("buff.WriteString(", "value.String()", ")")
 		g.P("buff.WriteString(", `" )"`, ")")
 		g.P("return ", "buff.String()")
 		g.P("}")
+
 		//update
 		g.P("func (m *", mc.goName, ") DBUpdate() string{")
 		g.P("var buff bytes.Buffer")
@@ -2447,15 +2461,38 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("return ")
 		g.P("}")
 		//redis
+		//redis Insert
+		g.P("func (m *", mc.goName, ") RedisInsert(key interface{}) (table string, data []interface{}) {")
+		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
+		g.P("data = make([]interface{}, 2*", len(topLevelFields), ")")
+		g.P("j:= 0")
+		for _, pf := range topLevelFields {
+			g.P(`data[j]= "`, pf.getName(), `"`)
+			g.P("data[j+1]= m.", pf.getName())
+			g.P("j += 2")
+		}
+		g.P("return ")
+		g.P("}")
 		//redis set
 		g.P("func (m *", mc.goName, ") RedisSet(key interface{}) (table string, data []interface{}) {")
 		g.P(`table = "`, mc.goName, `"+"_"+`, "fmt.Sprint(key)")
+		g.P("if len(m.XXX_Update2) == 0{")
+		g.P("data = make([]interface{}, 2*", len(topLevelFields), ")")
+		g.P("j:= 0")
+		for _, pf := range topLevelFields {
+			g.P(`data[j]= "`, pf.getName(), `"`)
+			g.P("data[j+1]= m.", pf.getName())
+			g.P("j += 2")
+		}
+		g.P("}else{")
+
 		g.P("data = make([]interface{},2*len(m.XXX_Update2))")
 		g.P("j:= 0")
 		g.P("for k,v:= range m.XXX_Update2{")
 		g.P("data[j]= k")
 		g.P("data[j+1]= v")
 		g.P("j += 2")
+		g.P("}")
 		g.P("}")
 		g.P("return ")
 		g.P("}")
@@ -2491,7 +2528,11 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 
 		//db and redis  update
 		//update
-		g.P("func (m *", mc.goName, ") DoUpdate() (sql, table string, data[]interface{}){")
+		g.P("func (m *", mc.goName, ") DoUpdate() (do bool, sql, table string, data[]interface{}){")
+		g.P("if len(m.XXX_Update) == 0{")
+		g.P("do = false")
+		g.P("return")
+		g.P("}")
 		g.P("var buff bytes.Buffer")
 		g.P("buff.WriteString(", `"UPDATE "`, ")")
 		g.P(`buff.WriteString("`, mc.goName, `")`)
@@ -2532,6 +2573,7 @@ func (g *Generator) generateCommonMethods(mc *msgCtx, topLevelFields []topLevelF
 		g.P("i += 1")
 		g.P("}")
 		g.P("sql = buff.String()")
+		g.P("do = true")
 		g.P("return ")
 		g.P("}")
 		g.P()
